@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bustracka-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bustracka_db
+      POSTGRES_USER: bustracka_user
+      POSTGRES_PASSWORD: bustracka_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - bustracka_pgdata:/var/lib/postgresql/data
+      - ./src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./src/main/resources/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: bustracka-n8n
+    restart: unless-stopped
+    environment:
+      GENERIC_TIMEZONE: America/Lima
+      TZ: America/Lima
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/import:ro # flujos y credenciales de ejemplo para importarlos por comando (ver README)
+    depends_on:
+      - postgres
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: bustracka-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  bustracka_pgdata:
+  n8n_data:
